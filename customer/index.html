@@ -701,6 +701,50 @@
     }
     .wishlist-btn-card:hover, .wishlist-btn-card.active { color: var(--red); border-color: var(--red); background: var(--red-glow); }
 
+    /* ── PRODUCT GRID (2 cols mobile → 3 cols tablet/desktop) ── */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    @media (min-width: 768px) {
+      .products-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    }
+    @media (min-width: 1280px) {
+      .products-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ── HORIZONTAL CATEGORY SCROLL ROWS (global-store style) ── */
+    .category-row-block { margin-bottom: 44px; }
+    .category-row-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px; gap: 12px;
+    }
+    .category-row-head h3 {
+      font-weight: 800; font-size: clamp(16px, 2.4vw, 20px);
+    }
+    .category-scroll-row {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 4px 4px 14px;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    .category-scroll-row::-webkit-scrollbar { height: 6px; }
+    .category-scroll-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    .category-scroll-row .product-card {
+      flex: 0 0 auto;
+      width: 46vw;
+      max-width: 200px;
+      scroll-snap-align: start;
+    }
+    @media (min-width: 640px) {
+      .category-scroll-row .product-card { width: 220px; max-width: none; }
+    }
+
     /* ── STAR RATING ── */
     .stars { color: #F59E0B; font-size: 12px; letter-spacing: 1px; }
 
@@ -1458,7 +1502,14 @@
           </div>
           <button onclick="navigateTo('products')" class="btn-secondary">View All <i class="fa-solid fa-arrow-right"></i></button>
         </div>
-        <div id="featured-products-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;"></div>
+        <div id="featured-products-grid" class="products-grid"></div>
+      </div>
+    </section>
+
+    <!-- SHOP BY CATEGORY — HORIZONTAL SCROLL ROWS -->
+    <section style="padding:0 0 20px;" class="reveal">
+      <div style="max-width:1400px;margin:0 auto;padding:0 24px;">
+        <div id="home-category-rows"></div>
       </div>
     </section>
 
@@ -1548,7 +1599,7 @@
           </div>
           <button onclick="navigateTo('products')" class="btn-secondary">View All <i class="fa-solid fa-arrow-right"></i></button>
         </div>
-        <div id="new-arrivals-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;"></div>
+        <div id="new-arrivals-grid" class="products-grid"></div>
       </div>
     </section>
 
@@ -1713,7 +1764,7 @@
         </div>
 
         <!-- Products Grid -->
-        <div id="all-products-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;"></div>
+        <div id="all-products-grid" class="products-grid"></div>
         <div id="products-load-more" style="text-align:center;padding:40px 0;display:none;">
           <button onclick="loadMoreProducts()" class="btn-secondary"><i class="fa-solid fa-plus"></i> Load More</button>
         </div>
@@ -1752,7 +1803,7 @@
             <i class="fa-solid fa-fire"></i> Limited Time
           </div>
         </div>
-        <div id="deals-products-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;"></div>
+        <div id="deals-products-grid" class="products-grid"></div>
       </div>
     </div>
   </div>
@@ -2331,7 +2382,7 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
     document.title = `GIZMO — ${pageTitles[page] || 'Power Your World'}`;
 
-    if (page === 'home')       { renderFeaturedProducts(); renderNewArrivals(); renderHomeCategories(); renderDealShowcase(); renderHeroQuickCats(); }
+    if (page === 'home')       { renderFeaturedProducts(); renderNewArrivals(); renderHomeCategories(); renderCategoryProductRows(); renderDealShowcase(); renderHeroQuickCats(); }
     if (page === 'products')   { showSkeletons('all-products-grid', 8); setTimeout(() => { injectProductsFilters(); renderProductCategoryChips(); applyFilters(); }, 50); }
     if (page === 'categories') renderCategoriesPage();
     if (page === 'deals')      { renderDealsPage(); renderDealShowcase(); }
@@ -2864,7 +2915,7 @@
       const heroEl = document.getElementById('hero-products-count');
       if (heroEl) heroEl.textContent = State.products.length + '+';
 
-      if (State.currentPage === 'home')     { renderFeaturedProducts(); renderNewArrivals(); renderHomeCategories(); renderDealShowcase(); renderHeroQuickCats(); if (State.banners.length === 0) renderBannerTrack(); }
+      if (State.currentPage === 'home')     { renderFeaturedProducts(); renderNewArrivals(); renderHomeCategories(); renderCategoryProductRows(); renderDealShowcase(); renderHeroQuickCats(); if (State.banners.length === 0) renderBannerTrack(); }
       if (State.currentPage === 'products') applyFilters();
       if (State.currentPage === 'deals')    { renderDealsPage(); renderDealShowcase(); }
       renderWishlistDrawer();
@@ -2879,6 +2930,7 @@
     State.unsubs.categories = onSnapshot(q, (snap) => {
       State.categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderHomeCategories();
+      renderCategoryProductRows();
       renderHeroQuickCats();
       if (State.currentPage === 'products')   renderProductCategoryChips();
       if (State.currentPage === 'categories') renderCategoriesPage();
@@ -2987,6 +3039,32 @@
           </div>
         </div>`;
     }).join('');
+  }
+
+  /** Horizontal scroll rows of products, one row per category — global-store style */
+  function renderCategoryProductRows() {
+    const container = document.getElementById('home-category-rows');
+    if (!container) return;
+    if (!State.categories.length || !State.products.length) { container.innerHTML = ''; return; }
+
+    const rowsHtml = State.categories.map(cat => {
+      const items = State.products.filter(p => p.categoryId === cat.id).slice(0, 12);
+      if (!items.length) return '';
+      return `
+        <div class="category-row-block">
+          <div class="category-row-head">
+            <h3>${esc(cat.name)}</h3>
+            <button class="btn-secondary" onclick="filterByCategoryAndNavigate('${esc(cat.id)}','${esc(cat.name)}')">
+              View All <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="category-scroll-row" role="list" aria-label="${esc(cat.name)} products">
+            ${items.map(buildProductCard).join('')}
+          </div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = rowsHtml || '';
   }
 
   function filterByCategoryAndNavigate(catId, catName) {
